@@ -89,7 +89,6 @@
     <Compile Include="TextPointers\UTF16TextPtr32Node.cs" />
     <Compile Include="TextPointers\UTF8TextPtr32Node.cs" />
     <Compile Include="PS3PluginExt.cs" />
-    <Compile Include="TMAPI\PS3RPC.cs" />
     <Compile Include="TMAPI\TMAPI.cs" />
     <Compile Include="TMAPI\TMAPI_NET.cs" />
   </ItemGroup>
@@ -112,9 +111,7 @@
   <ItemGroup>
     <None Include="Resources\B16x16_Button_Pointer32.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="PPCFunction\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="Resources\B16x16_Button_Text_Pointer.png" />
   </ItemGroup>

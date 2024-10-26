@@ -302,6 +302,12 @@ namespace PS3Plugin
             return Parameters.Status;
         }
 
+        public uint[] GetModules()
+        {
+            PS3TMAPI.GetModuleList(Target, Parameters.ProcessID, out Parameters.ModuleIDs);
+            return Parameters.ModuleIDs;
+        }
+
         public uint ProcessID()
         {
             PS3TMAPI.GetProcessList(Target, out Parameters.ProcessIDs);
@@ -321,7 +327,7 @@ namespace PS3Plugin
             {
                 PS3TMAPI.ProcessInfo processInfo;
                 PS3TMAPI.GetProcessInfo(Target, processId, out processInfo);
-                return processInfo.Hdr.ToString();
+                return processInfo.Hdr.ELFPath.Replace("dev_hdd0/", "").Replace("game/", "").Replace("USRDIR/", "");
             }
             return "";
         }
@@ -335,6 +341,36 @@ namespace PS3Plugin
                 return processInfo.Hdr.ELFPath;
             }
             return "";
+        }
+
+        public void ProcessStop()
+        {
+            PS3TMAPI.ProcessStop(Target, TMAPI.Parameters.ProcessID);
+        }
+
+        public void ProcessContinue()
+        {
+            PS3TMAPI.ProcessContinue(Target, TMAPI.Parameters.ProcessID);
+        }
+
+        public void ProcessKill()
+        {
+            PS3TMAPI.ProcessKill(Target, TMAPI.Parameters.ProcessID);
+        }
+
+        public void SetBreakPoint(ulong ThreadID, ulong Address)
+        {
+            PS3TMAPI.SetBreakPoint(Target, PS3TMAPI.UnitType.PPU, TMAPI.Parameters.ProcessID, ThreadID, Address);
+        }
+
+        public void ClearBreakPoint(ulong ThreadID, ulong Address)
+        {
+            PS3TMAPI.ClearBreakPoint(Target, PS3TMAPI.UnitType.PPU, TMAPI.Parameters.ProcessID, ThreadID, Address);
+        }
+
+        public void t()
+        {
+            
         }
 
         public uint GetProcessPPUThreads(uint processID)

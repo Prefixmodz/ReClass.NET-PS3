@@ -7,6 +7,8 @@ using ReClassNET.Plugins;
 using ReClassNET.Util.Conversion;
 using PS3Plugin.Pointer32;
 using PS3Plugin.TextPointers;
+using System.Runtime.CompilerServices;
+using ReClassNET.Memory;
 
 namespace PS3Plugin
 {
@@ -16,7 +18,6 @@ namespace PS3Plugin
 
         private IPluginHost host;
         private static TMAPI PS3 = new TMAPI();
-        private static PS3RPC PS3RPC = new PS3RPC(PS3);
 
         private byte[] lastBuffer;
         private uint lastAddress;
@@ -43,15 +44,27 @@ namespace PS3Plugin
             return true;
         }
 
-        public IntPtr OpenRemoteProcess(IntPtr id, ProcessAccess desiredAccess)
+        public IntPtr OpenRemoteProcess(IntPtr Pid, ProcessAccess desiredAccess)
         {
-            host.MainWindow.CurrentClassNode.AddressFormula = ((uint)(id.ToInt64() & 0xFFFFFFFF)).ToString("X");
-            return id;
+            //host.MainWindow.CurrentClassNode.AddressFormula = ((uint)(id.ToInt64() & 0xFFFFFFFF)).ToString("X");
+            //return id;
+            lock (sync)
+            {
+                try
+                {
+                    
+                }
+                catch (Exception ex)
+                {
+
+                }
+                return Pid;
+            }
         }
 
         public void CloseRemoteProcess(IntPtr process)
         {
-            PS3.DisconnectTarget();
+            
         }
 
         public bool ReadRemoteMemory(IntPtr process, IntPtr address, ref byte[] buffer, int offset, int size)
@@ -125,24 +138,30 @@ namespace PS3Plugin
                 {
                     PS3.ConnectTarget();
                     PS3.AttachProcess();
-                   
+
                     PS3TMAPI.GetProcessList(TMAPI.Target, out TMAPI.Parameters.ProcessIDs);
                     foreach (uint proc in TMAPI.Parameters.ProcessIDs)
                     {
-                        var data = new EnumerateProcessData
+                        var processdata = new EnumerateProcessData
                         {
-                            
+
                             Id = (IntPtr)proc,
                             Name = PS3.GetProcessName(proc),
                             Path = PS3.GetProcessPath(proc),
 
                         };
-                        callbackProcess(ref data);
+                        callbackProcess(ref processdata);
                     }
+                    var sectiondata = new SectionProtection()
+                    {
+                        
+                    };
+                    
                 }
+
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Could not connect PS3.", "Connection Error");
+                    MessageBox.Show("Could not connect PS3", "Connection Error");
                     Console.WriteLine(ex.Message);
                 }
             }
@@ -154,51 +173,8 @@ namespace PS3Plugin
             {
                 try
                 {
-                    foreach (uint module in PS3RPC.GetModules())
-                    {
-                        uint processAddress = (uint)(process.ToInt64() & 0xFFFFFFFF);
-                        if (processAddress != PS3.GetModuleStartAddress(module)) continue;
-
-                        //XBOX_MODULE_INFO moduleInfo = module.ModuleInfo;
-                        var moduleData = new EnumerateRemoteModuleData
-                        {
-                            BaseAddress = new IntPtr(PS3.GetModuleStartAddress(module)),
-                            Path = PS3.GetModuleName(module),
-                            Size = new IntPtr((uint)PS3.GetModuleSize(module)),
-                        };
-                        callbackModule(ref moduleData);
-
-                        //foreach (uint section in module2.)
-                        //{
-                        //    XBOX_SECTION_INFO sectionInfo = section.SectionInfo;
-                        //    SectionCategory category = SectionCategory.Unknown;
-                        //    if ((sectionInfo.Flags & XboxSectionInfoFlags.Executable) == XboxSectionInfoFlags.Executable || new string[] { ".text", ".ptext" }.Contains(sectionInfo.Name)) category = SectionCategory.CODE;
-                        //    else if (new string[] { ".data", ".rdata" }.Contains(sectionInfo.Name)) category = SectionCategory.DATA;
-
-                        //    SectionProtection protection = SectionProtection.NoAccess;
-                        //    if ((sectionInfo.Flags & XboxSectionInfoFlags.Executable) == XboxSectionInfoFlags.Executable)
-                        //        protection |= SectionProtection.Execute;
-                        //    if ((sectionInfo.Flags & XboxSectionInfoFlags.Writeable) == XboxSectionInfoFlags.Writeable)
-                        //        protection |= SectionProtection.Write;
-                        //    if ((sectionInfo.Flags & XboxSectionInfoFlags.Readable) == XboxSectionInfoFlags.Readable)
-                        //        protection |= SectionProtection.Read;
-
-                        //    var sectionData = new EnumerateRemoteSectionData
-                        //    {
-                        //        BaseAddress = new IntPtr(sectionInfo.BaseAddress),
-                        //        Size = new IntPtr(sectionInfo.Size),
-                        //        Type = SectionType.Image,
-                        //        Category = category,
-                        //        ModulePath = moduleInfo.Name,
-                        //        Name = sectionInfo.Name,
-                        //        Protection = protection
-                        //    };
-                        //    callbackSection(ref sectionData);
-                        }
+                   
                     
-
-
-
                 }
                 catch (Exception ex)
                 {
@@ -210,15 +186,17 @@ namespace PS3Plugin
 
         public void ControlRemoteProcess(IntPtr process, ControlRemoteProcessAction action)
         {
-            
-
+            switch (action) { case ControlRemoteProcessAction.Suspend: PS3.ProcessStop(); break; case ControlRemoteProcessAction.Resume: PS3.ProcessContinue(); break; case ControlRemoteProcessAction.Terminate: PS3.ProcessKill(); break; }
         }
 
         public bool AttachDebuggerToProcess(IntPtr id)
         {
-            // Not supported.
-            
-            return false;
+            lock (sync)
+            {
+                PS3.AttachProcess();
+
+            }
+            return true;
         }
 
         public void DetachDebuggerFromProcess(IntPtr id)
@@ -235,7 +213,7 @@ namespace PS3Plugin
 
         public void HandleDebugEvent(ref DebugEvent evt)
         {
-            // Not supported.
+            lock(sync) { PS3TMAPI.ProcessContinue(TMAPI.Target, TMAPI.Parameters.ProcessID); }
         }
 
         public bool SetHardwareBreakpoint(IntPtr id, IntPtr address, HardwareBreakpointRegister register, HardwareBreakpointTrigger trigger, HardwareBreakpointSize size, bool set)
